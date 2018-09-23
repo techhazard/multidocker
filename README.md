@@ -1,7 +1,7 @@
 # Multidocker
 run multiple compose files as one.
 
-## Why? When? How? Whaaaa?
+## Why? When? How? Whaaaat?
 I'm using a reverse proxy container to make several containers available over HTTPS.
 Because of this, the containers need to be in the same compose file.
 After a while, the file started to grow out of control, so I wrote this tool to make it more manageable.
