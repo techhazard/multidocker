@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import re
 import sys
-import yaml
+from ruamel import yaml
 from os import listdir, path
 from subprocess import run, PIPE
 
@@ -42,7 +42,7 @@ def load_compose_file():
         return None
 
 
-def get_compose_command():
+def get_external_command():
     # we need to load the dockerfile from stdin if we're in multidocker mode
     if multidocker_mode():
         return ['docker-compose', '-f', '-']
@@ -57,38 +57,75 @@ def single_run():
     """
     compose_file = load_compose_file()
 
-    command = get_compose_command()
+    command = get_external_command()
     command.extend(sys.argv[1:])
 
     run(command, input=compose_file)
 
 
+def get_command_input():
+    # TODO: add readline support
+    input_string = input('multidocker> ')
+    return input_string.split(" ")
+
+
+def write_composefile(compose_file):
+    with open('multidocker.yml', 'w') as f:
+        f.write(load_compose_file())
+
+
+VALID_SUBCOMMANDS = None
+VALID_MULTIDOCKER_COMMANDS = ['cat', 'exit', 'help', 'reload', 'write', 'quit']
+def is_valid_dockercommand(subcommand):
+    global VALID_SUBCOMMANDS
+
+    if VALID_SUBCOMMANDS is None:
+        subcommands_text = get_subcommands_text()
+        VALID_SUBCOMMANDS = get_valid_subcommands(subcommands_text)
+        VALID_SUBCOMMANDS.remove('help')
+
+    if subcommand not in VALID_SUBCOMMANDS:
+        print(f"'{subcommand}' is not a valid docker-compose or multidocker subcommand.")
+        print("\nValid docker-compose subcommands are:")
+        print("\t" + ", ".join(VALID_SUBCOMMANDS))
+        print("\nValid multidocker subcommands are:")
+        print("\t" + ", ".join(VALID_MULTIDOCKER_COMMANDS))
+        print("\npress ctrl+d to quit multidocker")
+        return False
+
+    return True
+
+
 def interactive_run():
     compose_file = load_compose_file()
-
-    subcommands_text = get_subcommands_text()
-    valid_subcommands = get_valid_subcommands(subcommands_text)
 
     print(interactive_helptext())
 
     while True:#
         try:
-            input_string = input('multidocker> ')
-            input_parts = input_string.split(" ")
+            input_parts = get_command_input()
             subcommand = input_parts[0]
-            if subcommand not in valid_subcommands:
-                print(f"'{subcommand}' is not a valid docker-compose subcommand. Valid subcommands are:")
-                print(", ".join(valid_subcommands))
-                print("press ctrl+d to quit multidocker")
-                continue
 
-            if subcommand == 'help':
-                print(subcommands_text)
-                continue
+            if subcommand == 'cat':
+                print(compose_file)
 
-            command = get_compose_command()
-            command.extend(input_parts)
-            run(command, input=compose_file)
+            elif subcommand == 'write':
+                write_composefile(compose_file)
+
+            elif subcommand == 'help':
+                print(interactive_helptext())
+
+            elif subcommand == 'reload':
+                compose_file = load_compose_file()
+
+            elif subcommand in ['exit', 'quit']:
+                return
+
+            elif is_valid_dockercommand(subcommand):
+                command = get_external_command()
+                command.extend(input_parts)
+                run(command, input=compose_file)
+
 
         except KeyboardInterrupt:
             print("\npress ctrl+d to quit multidocker")
@@ -103,7 +140,7 @@ def get_subcommands_text():
     """
     Get the "Commands:" section of `docker-compose help`
     """
-    # TODO: upgrade to python 3.7 to replace `.stdout` with `text=True`
+    # TODO: upgrade to python 3.7 to replace `PIPE` and `.stdout` with `text=True`
     # see https://docs.python.org/3.7/library/subprocess.html#subprocess.run
     helptext = run(['docker-compose', 'help'], encoding='utf-8', stdout=PIPE).stdout
 
@@ -121,16 +158,29 @@ def get_valid_subcommands(subcommands_text):
     return [m.group(1) for m in command_matches]
 
 
+INTERACTIVE_HELPTEXT = None
 def interactive_helptext():
-    return """Interactive Mode
+    global INTERACTIVE_HELPTEXT
+
+    if INTERACTIVE_HELPTEXT == None:
+        subcommands_text = get_subcommands_text()
+        INTERACTIVE_HELPTEXT = f"""Interactive Mode
 
 You can run docker subcommands here, like so:
+\t------------------------------------------
+\t| multidocker> ps                        |
+\t|     Name        Command  State   Ports |
+\t| ---------------------------------------|
+\t| container_name  /init    Up            |
+\t| multidocker>                           |
+\t------------------------------------------
 
-multidocker> ps
-	Name		Command   State   Ports
----------------------------------------
-container_name	/init     Up
-multidocker>
-
-press ctrl+d to quit interactive mode
+{subcommands_text}
+Multidocker Commands:
+  cat                Output combined compose file to disk
+  help               Show this help text
+  reload             Reload the compose files from disk
+  write              Write the combined compsose file to disk
+  quit, exit         Exit interactive mode (ctrl+d also works)
 """
+    return INTERACTIVE_HELPTEXT
