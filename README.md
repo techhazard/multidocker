@@ -19,6 +19,16 @@ You will need the following setup:
 ```sh
 $ tree
 multidocker/
+├── some_app/
+│   └── docker-compose.yml
+└── other_app/
+    └── docker-compose.yml
+```
+
+## Example
+```sh
+$ tree
+multidocker/
 ├── nextcloud/
 │   └── docker-compose.yml
 └── proxy/
@@ -28,7 +38,7 @@ multidocker/
     └── vhost.d/
 ```
 
-`nextcloud/docker-compose.yml`
+`nextcloud/docker-compose.yml`:
 ```yml
 ---
 version: '3.6'
@@ -66,7 +76,7 @@ services:
 ...
 ```
 
-`proxy/docker-compose.yml`
+`proxy/docker-compose.yml`:
 ```yml
 ---
 version: '3.6'
@@ -185,3 +195,4 @@ It also saves time because it keeps the combined compose file in memory. If you 
 - [ ] Use readline in interactive mode
 - [ ] Shell-like history in interactive mode
 - [ ] Upgrade to python 3.7 to use the improved `subprocess.run`
+- [ ] Check if example actually works
