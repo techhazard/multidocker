@@ -133,16 +133,55 @@ $ multidocker
 Interactive Mode
 
 You can run docker subcommands here, like so:
+        ------------------------------------------
+        | multidocker> ps                        |
+        |     Name        Command  State   Ports |
+        | ---------------------------------------|
+        | container_name  /init    Up            |
+        | multidocker>                           |
+        ------------------------------------------
 
-multidocker> ps
-        Name            Command   State   Ports
----------------------------------------
-container_name  /init     Up
-multidocker>
+Commands:
+  build              Build or rebuild services
+  bundle             Generate a Docker bundle from the Compose file
+  config             Validate and view the Compose file
+  create             Create services
+  down               Stop and remove containers, networks, images, and volumes
+  events             Receive real time events from containers
+  exec               Execute a command in a running container
+  help               Get help on a command
+  images             List images
+  kill               Kill containers
+  logs               View output from containers
+  pause              Pause services
+  port               Print the public port for a port binding
+  ps                 List containers
+  pull               Pull service images
+  push               Push service images
+  restart            Restart services
+  rm                 Remove stopped containers
+  run                Run a one-off command
+  scale              Set number of containers for a service
+  start              Start services
+  stop               Stop services
+  top                Display the running processes
+  unpause            Unpause services
+  up                 Create and start containers
+  version            Show the Docker-Compose version information
 
-press ctrl+d to quit interactive mode
-
-multidocker> |
+Multidocker Commands:
+  cat                Output combined compose file to disk
+  help               Show this help text
+  reload             Reload the compose files from disk
+  write              Write the combined compsose file to disk
+  quit, exit         Exit interactive mode (ctrl+d also works)
 ```
 You can run all the docker-compose command from within this prompt. It saves you from having to type `multidocker` before each command.
-It also saves time because it keeps the combined compose file in memory. If you changed one of the compose files, you should exit interactive mode and restart it.
+It also saves time because it keeps the combined compose file in memory. If you changed one of the compose files, you should run the `reload`command.
+
+
+## Improvements:
+- [ ] Auto reload on file change
+- [ ] Use readline in interactive mode
+- [ ] Shell-like history in interactive mode
+- [ ] Upgrade to python 3.7 to use the improved `subprocess.run`
