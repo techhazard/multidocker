@@ -1,37 +1,148 @@
-# A sample Python project
+# Multidocker
+run multiple compose files as one.
 
-A sample project that exists as an aid to the [Python Packaging User
-Guide][packaging guide]'s [Tutorial on Packaging and Distributing
-Projects][distribution tutorial].
+## Why? When? How? Whaaaa?
+I'm using a reverse proxy container to make several containers available over HTTPS.
+Because of this, the containers need to be in the same compose file.
+After a while, the file started to grow out of control, so I wrote this tool to make it more manageable.
 
-This project does not aim to cover best practices for Python project
-development as a whole. For example, it does not provide guidance or tool
-recommendations for version control, documentation, or testing.
 
-[The source for this project is available here][src].
+## Setup
+### 1. Install multidocker
+TODO: publish package on pypi
+```sh
+$ pip3 install multidocker
+```
 
-Most of the configuration for a Python project is done in the `setup.py` file,
-an example of which is included in this project. You should edit this file
-accordingly to adapt this sample project to your needs.
+### 2. Setup directory
+You will need the following setup:
+```sh
+$ tree
+multidocker/
+├── nextcloud/
+│   └── docker-compose.yml
+└── proxy/
+    ├── docker-compose.yml
+    ├── htpasswd
+    ├── nginx-extra-options.conf
+    └── vhost.d/
+```
 
-----
+`nextcloud/docker-compose.yml`
+```yml
+---
+version: '3.6'
 
-This is the README file for the project.
+# these two containers share the nextcloud
+# network over which they will communicate
+services:
+  nextcloud:
+    restart: unless-stopped
+    image: nextcloud
+    environment:
+      VIRTUAL_HOST: "my_hostname.example.com"
+      VIRTUAL_PORT: 80
+      LETSENCRYPT_HOST: "my_hostname.example.com"
+    volumes:
+      - nextcloud_data:/var/www/html:rw
+    # this adds the 'multidocker' network that allows
+    # communication between compose files
+    external: true
+    networks:
+      - nextcloud
+    depends_on:
+      - nextcloud_db
 
-The file should use UTF-8 encoding and can be written using
-[reStructuredText][rst] or [markdown][md use] with the appropriate [key set][md
-use]. It will be used to generate the project webpage on PyPI and will be
-displayed as the project homepage on common code-hosting services, and should be
-written for that purpose.
+  nextcloud_db:
+    restart: unless-stopped
+    image: postgres:10.4
+    environment:
+      POSTGRES_PASSWORD: "secret"
+      POSTGRES_USER: "nextcloud"
+    volumes:
+      - nextcloud_db:/var/lib/postgresql/data:rw
+    networks:
+      - nextcloud
+...
+```
 
-Typical contents for this file would include an overview of the project, basic
-usage examples, etc. Generally, including the project changelog in here is not a
-good idea, although a simple “What's New” section for the most recent version
-may be appropriate.
+`proxy/docker-compose.yml`
+```yml
+---
+version: '3.6'
+services:
 
-[packaging guide]: https://packaging.python.org
-[distribution tutorial]: https://packaging.python.org/en/latest/distributing.html
-[src]: https://github.com/pypa/sampleproject
-[rst]: http://docutils.sourceforge.net/rst.html
-[md]: https://tools.ietf.org/html/rfc7764#section-3.5 "CommonMark variant"
-[md use]: https://packaging.python.org/specifications/core-metadata/#description-content-type-optional
+  nginx:
+    image: jwilder/nginx-proxy:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - nginx_conf:/etc/nginx/conf.d:rw
+      - ./nginx-extra-options.conf:/etc/nginx/conf.d/extra.conf:ro
+      - ./htpasswd:/etc/nginx/htpasswd_default:ro
+      - ./vhost.d:/etc/nginx/vhost.d:ro
+      - nginx_html:/usr/share/nginx/html:ro
+      - nginx_dhparam:/etc/nginx/dhparam:rw
+      - certificates:/etc/nginx/certs:ro
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+    # this adds the 'multidocker' network that allows
+    # communication between compose files
+    external: true
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+
+
+  letsencrypt:
+    image: jrcs/letsencrypt-nginx-proxy-companion
+    volumes:
+      - nginx_conf:/etc/nginx/conf.d:rw
+      - nginx_vhost:/etc/nginx/vhost.d:rw
+      - nginx_html:/usr/share/nginx/html:rw
+      - certificates:/etc/nginx/certs:rw
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - nginx
+...
+```
+(The other files are there for demonstration)
+
+## Usage
+You can use all the `docker-compose` commands: ps, up, down, logs etc.
+
+### Single use
+```sh
+$ multidocker up -d
+Creating network "multidocker_nextcloud_nextcloud" with the default driver
+Creating network "multidocker_multidocker" with the default driver
+Creating volume "multidocker_nextcloud_nextcloud_data" with default driver
+Creating volume "multidocker_nextcloud_nextcloud_db" with default driver
+Creating volume "multidocker_proxy_certificates" with default driver
+Creating volume "multidocker_proxy_nginx_conf" with default driver
+Creating volume "multidocker_proxy_nginx_dhparam" with default driver
+Creating volume "multidocker_proxy_nginx_html" with default driver
+Creating nextcloud_nextcloud_db ... done
+Creating proxy_nginx            ... done
+Creating nextcloud_nextcloud    ... done
+```
+
+### Interactive Mode
+I've also added an interactive mode. You can start it by running `multidocker` without any arguments:
+```sh
+$ multidocker
+Interactive Mode
+
+You can run docker subcommands here, like so:
+
+multidocker> ps
+        Name            Command   State   Ports
+---------------------------------------
+container_name  /init     Up
+multidocker>
+
+press ctrl+d to quit interactive mode
+
+multidocker> |
+```
+You can run all the docker-compose command from within this prompt. It saves you from having to type `multidocker` before each command.
+It also saves time because it keeps the combined compose file in memory. If you changed one of the compose files, you should exit interactive mode and restart it.
