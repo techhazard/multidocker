@@ -8,12 +8,15 @@ After a while, the file started to grow out of control, so I wrote this tool to 
 
 
 ## Setup
+### 0. Requirements
+  * `docker`
+  * `docker-compose`
+  * `python 3.6+`
+
 ### 1. Install multidocker
-TODO: publish package on pypi
 ```sh
 $ pip3 install multidocker
 ```
-
 ### 2. Setup directory
 You will need the following setup:
 ```sh
