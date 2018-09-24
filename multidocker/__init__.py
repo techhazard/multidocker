@@ -3,8 +3,8 @@ name = 'multidocker'
 
 import sys
 
-from multidocker import single_run, interactive_run
 from test import testmode, run_doctests
+from command import single_run, interactive_run
 
 
 class UnreachableCodeException(Exception):
