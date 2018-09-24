@@ -5,9 +5,9 @@ from ruamel import yaml
 from os import listdir, path
 from subprocess import run, PIPE
 
-from app import is_an_app, open_app
-from app import combine as combine_apps
-from app import add_namespace as namespace_app
+from multidocker.app import is_an_app, open_app
+from multidocker.app import combine as combine_apps
+from multidocker.app import add_namespace as namespace_app
 
 
 MULTIDOCKER_MODE = None
