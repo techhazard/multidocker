@@ -66,7 +66,7 @@ setup(
         #   3 - Alpha
         #   4 - Beta
         #   5 - Production/Stable
-        'Development Status :: 4 - Beta'
+        'Development Status :: 4 - Beta',
 
         # Pick your license as you wish
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
