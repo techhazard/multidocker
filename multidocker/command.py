@@ -36,7 +36,7 @@ def load_compose_file():
 
         namespaced_apps = [ namespace_app(app) for app in apps ]
 
-        return yaml.dump(combine_apps(namespaced_apps), encoding='utf-8')
+        return yaml.dump(combine_apps(namespaced_apps), encoding='utf-8', default_flow_style=False)
 
     else:
         return None
@@ -71,7 +71,7 @@ def get_command_input():
 
 def write_composefile(compose_file):
     with open('multidocker.yml', 'w') as f:
-        f.write(load_compose_file())
+        f.write(compose_file.decode('utf-8'))
 
 
 VALID_SUBCOMMANDS = None
@@ -82,6 +82,7 @@ def is_valid_dockercommand(subcommand):
     if VALID_SUBCOMMANDS is None:
         subcommands_text = get_subcommands_text()
         VALID_SUBCOMMANDS = get_valid_subcommands(subcommands_text)
+        # we override `help` with our own text
         VALID_SUBCOMMANDS.remove('help')
 
     if subcommand not in VALID_SUBCOMMANDS:
@@ -107,7 +108,7 @@ def interactive_run():
             subcommand = input_parts[0]
 
             if subcommand == 'cat':
-                print(compose_file)
+                print(compose_file.decode('utf-8'))
 
             elif subcommand == 'write':
                 write_composefile(compose_file)

@@ -36,7 +36,7 @@ setup(
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
     name='multidocker',
-    version='1.0.3',
+    version='1.0.4',
     description='Run multiple docker-compose files together',
 
     # This is an optional longer description of your project that represents

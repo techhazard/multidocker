@@ -4,7 +4,7 @@ from functools import reduce
 
 from ruamel.yaml import safe_load
 
-import multidocker.volume
+from multidocker import volume
 from multidocker.volume import get_host_path
 from multidocker.volume import is_volume as path_is_volume
 from multidocker.util import namespace_or_create_dict, namespace_or_create_list, merge
